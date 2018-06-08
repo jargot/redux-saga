@@ -460,7 +460,7 @@ export default function proc(env, iterator, parentContext, parentEffectId, meta,
     cb.cancel = takeCb.cancel
   }
 
-  function runPutEffect({ channel, action, resolve }, cb) {
+  function runPutEffect({ channel = env.stdChannel, action, resolve }, cb) {
     /**
       Schedule the put in case another saga is holding a lock.
       The put will be executed atomically. ie nested puts will execute after
@@ -469,7 +469,7 @@ export default function proc(env, iterator, parentContext, parentEffectId, meta,
     asap(() => {
       let result
       try {
-        result = (channel ? channel.put : env.dispatch)(action)
+        result = channel.put(action)
       } catch (error) {
         cb(error, true)
         return

@@ -1,6 +1,5 @@
-import { is, check, object, createSetContextWarning } from './utils'
+import { is, check, object, createSetContextWarning, wrapSagaDispatch, identity } from './utils'
 import { stdChannel } from './channel'
-import { identity } from './utils'
 import { runSaga } from './runSaga'
 
 export default function sagaMiddlewareFactory({ context = {}, ...options } = {}) {
@@ -22,12 +21,12 @@ export default function sagaMiddlewareFactory({ context = {}, ...options } = {})
 
   function sagaMiddleware({ getState, dispatch }) {
     const channel = stdChannel()
-    channel.put = (options.emitter || identity)(channel.put)
+    const channelPut = (options.emitter || identity)(channel.put)
+    channel.put = wrapSagaDispatch(dispatch)
 
     sagaMiddleware.run = runSaga.bind(null, {
       context,
       channel,
-      dispatch,
       getState,
       sagaMonitor,
       logger,
@@ -40,7 +39,7 @@ export default function sagaMiddlewareFactory({ context = {}, ...options } = {})
         sagaMonitor.actionDispatched(action)
       }
       const result = next(action) // hit reducers
-      channel.put(action)
+      channelPut(action)
       return result
     }
   }

@@ -64,7 +64,7 @@ export function put(channel, action) {
   }
   if (is.undef(action)) {
     action = channel
-    channel = null
+    channel = undefined
   }
   return effect(PUT, { channel, action })
 }

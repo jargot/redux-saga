@@ -5,14 +5,17 @@ import { fork, take, put, select, all } from '../src/effects'
 
 function storeLike(reducer, state) {
   const channel = stdChannel()
+  const channelPut = channel.put
+  const dispatch = action => {
+    state = reducer(state, action)
+    channelPut(action)
+    return action
+  }
+  channel.put = dispatch
 
   return {
     channel,
-    dispatch: action => {
-      state = reducer(state, action)
-      channel.put(action)
-      return action
-    },
+    dispatch,
     getState: () => state,
   }
 }

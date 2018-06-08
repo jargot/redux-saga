@@ -115,10 +115,13 @@ test('runSaga monitoring', assert => {
   const sagaMonitor = createSagaMonitor(ids, effects, actions)
 
   const channel = stdChannel()
+  const channelPut = channel.put
   const dispatch = action => {
     sagaMonitor.actionDispatched(action)
+    channelPut(action)
     return action
   }
+  channel.put = dispatch
 
   const storeAction = { type: 'STORE_ACTION' }
   const sagaAction = { type: 'SAGA_ACTION' }
@@ -152,7 +155,7 @@ test('runSaga monitoring', assert => {
   }
 
   let iterator
-  const task = runSaga({ channel, dispatch, sagaMonitor }, () => (iterator = main()))
+  const task = runSaga({ channel, sagaMonitor }, () => (iterator = main()))
 
   dispatch(storeAction)
 
