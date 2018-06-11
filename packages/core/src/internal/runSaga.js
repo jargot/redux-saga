@@ -2,9 +2,14 @@ import { compose } from 'redux'
 import { is, check, uid as nextSagaId, wrapSagaDispatch, noop, log as _log } from './utils'
 import proc, { getMetaInfo } from './proc'
 import { stdChannel } from './channel'
+import { allEffectMiddleware, raceEffectMiddleware, makeSelectEffectMiddleware } from './custom-effect-middlewares'
 
 const RUN_SAGA_SIGNATURE = 'runSaga(options, saga, ...args)'
 const NON_GENERATOR_ERR = `${RUN_SAGA_SIGNATURE}: saga argument must be a Generator function!`
+
+function defaultRunCustomEffect({ type }) {
+  throw new Error(`${type} is not a supported effect type`)
+}
 
 export function runSaga(options, saga, ...args) {
   if (process.env.NODE_ENV === 'development') {
@@ -73,14 +78,20 @@ export function runSaga(options, saga, ...args) {
     }
   }
 
+  const customEffectMiddlewares = [allEffectMiddleware, raceEffectMiddleware]
+  if (is.func(getState)) {
+    customEffectMiddlewares.push(makeSelectEffectMiddleware(getState))
+  }
+  const runCustomEffect = compose(...customEffectMiddlewares)(defaultRunCustomEffect)
+
   const env = {
     stdChannel: channel,
     dispatch: wrapSagaDispatch(dispatch),
-    getState,
     sagaMonitor,
     logError,
     onError,
     finalizeRunEffect,
+    runCustomEffect,
   }
 
   const task = proc(env, iterator, context, effectId, getMetaInfo(saga), null)
